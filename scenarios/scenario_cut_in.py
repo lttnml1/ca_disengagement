@@ -11,9 +11,13 @@
 """
 
 
+from configparser import BasicInterpolation
 from scenarios.ScenarioClass import Scenario
 from util import helper_functions as hf
 import random
+
+from agents.basic_agent import BasicAgent
+import carla
 
 
 class Scenario_CutIn(Scenario):
@@ -32,16 +36,19 @@ class Scenario_CutIn(Scenario):
         try: 
             ego_blueprint = self.blueprints.filter("vehicle.dodge.charger_police")[0]
             self.ego = self.world.try_spawn_actor(ego_blueprint,self.spawn_points[4])
+
             adversary_blueprint = self.blueprints.filter("vehicle.tesla.model3")[0]
             adversary_blueprint.set_attribute('color','200,0,0')
             self.adversary = self.world.try_spawn_actor(adversary_blueprint,self.spawn_points[3])
 
             self.world.tick()
 
+            ego_agent = BasicAgent(self.ego,target_speed=self.ego_target_speed)
 
             while True:
                 try:
                     self.world.tick()
+                    self.ego.apply_control(carla.VehicleControl(.1,0,0))
                 except KeyboardInterrupt:
                     print("Interrupted by user!")
                     break
