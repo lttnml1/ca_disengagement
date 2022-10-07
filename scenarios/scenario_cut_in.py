@@ -31,6 +31,9 @@ class Scenario_CutIn(Scenario):
         self.adversary_target_speed = parameters[0]
         self.ego_target_speed = parameters[1]
         self.distance_when_lane_change = parameters[2]
+
+        self.features = []
+        self.score = None
     
     def execute_scenario(self):
         try: 
@@ -49,6 +52,7 @@ class Scenario_CutIn(Scenario):
             adv_agent = BasicAgent(self.adv,target_speed=self.adversary_target_speed)
 
             changed_lanes = False
+            counter = 0
             while True:
                 try:
                     self.world.tick()
@@ -64,9 +68,13 @@ class Scenario_CutIn(Scenario):
                             changed_lanes = True
                             new_wp = self.map.get_waypoint(carla.Location(x=84.220612, y=207.268448, z=0.952669))
                             adv_agent.set_destination(new_wp.transform.location)
-                    if(changed_lanes):
+                    elif(changed_lanes):
                         if adv_agent.done():
                             break
+                    if(counter > 1000):
+                        print("Timeout")
+                        break
+                    counter += 1
                         
                     
                 except KeyboardInterrupt:
@@ -83,6 +91,9 @@ class Scenario_CutIn(Scenario):
                     self.ego.destroy()
                 if self.adv is not None:
                     self.adv.destroy()
+    
+    def score_scenario(self):
+        return self.score
 
 
 
