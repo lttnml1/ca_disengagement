@@ -48,7 +48,7 @@ class Scenario_CutIn(Scenario):
             while True:
                 try:
                     self.world.tick()
-                    self.ego.apply_control(carla.VehicleControl(.1,0,0))
+                    self.ego.apply_control(ego_agent.run_step())
                 except KeyboardInterrupt:
                     print("Interrupted by user!")
                     break
