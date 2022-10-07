@@ -26,7 +26,7 @@ class Scenario_CutIn(Scenario):
         self.world_setup()
 
         self.ego = None
-        self.adversary = None
+        self.adv = None
 
         self.adversary_target_speed = parameters[0]
         self.ego_target_speed = parameters[1]
@@ -34,21 +34,41 @@ class Scenario_CutIn(Scenario):
     
     def execute_scenario(self):
         try: 
+            
             ego_blueprint = self.blueprints.filter("vehicle.dodge.charger_police")[0]
-            self.ego = self.world.try_spawn_actor(ego_blueprint,self.spawn_points[4])
+            ego_spawn_point = self.spawn_points[4]
+            self.ego = self.world.try_spawn_actor(ego_blueprint,ego_spawn_point)
 
             adversary_blueprint = self.blueprints.filter("vehicle.tesla.model3")[0]
             adversary_blueprint.set_attribute('color','200,0,0')
-            self.adversary = self.world.try_spawn_actor(adversary_blueprint,self.spawn_points[3])
+            self.adv = self.world.try_spawn_actor(adversary_blueprint,self.spawn_points[3])
 
             self.world.tick()
 
             ego_agent = BasicAgent(self.ego,target_speed=self.ego_target_speed)
+            adv_agent = BasicAgent(self.adv,target_speed=self.adversary_target_speed)
 
+            changed_lanes = False
             while True:
                 try:
                     self.world.tick()
                     self.ego.apply_control(ego_agent.run_step())
+                    self.adv.apply_control(adv_agent.run_step())
+                    
+                    if(not changed_lanes):
+                        if (self.adv.get_transform().location - self.ego.get_transform().location).x > self.distance_when_lane_change:
+                            adv_loc = self.adv.get_transform().location
+                            adv_waypoint = self.map.get_waypoint(adv_loc)
+                            right_lane_loc = adv_waypoint.get_right_lane().next(10)
+                            adv_agent.set_destination(right_lane_loc[0].transform.location)
+                            changed_lanes = True
+                            new_wp = self.map.get_waypoint(carla.Location(x=84.220612, y=207.268448, z=0.952669))
+                            adv_agent.set_destination(new_wp.transform.location)
+                    if(changed_lanes):
+                        if adv_agent.done():
+                            break
+                        
+                    
                 except KeyboardInterrupt:
                     print("Interrupted by user!")
                     break
@@ -61,8 +81,8 @@ class Scenario_CutIn(Scenario):
                 self.world.apply_settings(settings)
                 if self.ego is not None:
                     self.ego.destroy()
-                if self.adversary is not None:
-                    self.adversary.destroy()
+                if self.adv is not None:
+                    self.adv.destroy()
 
 
 

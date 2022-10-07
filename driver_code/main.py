@@ -12,7 +12,7 @@ from scenarios.scenario_cut_in import Scenario_CutIn
 """
 
 def main():
-    cut_in = Scenario_CutIn('127.0.0.1',2008,[10,10,10])
+    cut_in = Scenario_CutIn('127.0.0.1',2004,[10,8,5])
     cut_in.execute_scenario()
 
 if __name__ == '__main__':
