@@ -40,6 +40,7 @@ class BasicAgent(object):
         self._world = self._vehicle.get_world()
         self._map = self._world.get_map()
         self._last_traffic_light = None
+        self._end = None
 
         # Base parameters
         self._ignore_traffic_lights = False
@@ -117,6 +118,7 @@ class BasicAgent(object):
             :param end_location (carla.Location): final location of the route
             :param start_location (carla.Location): starting location of the route
         """
+        self._end = end_location
         if not start_location:
             start_location = self._local_planner.target_waypoint.transform.location
             clean_queue = True
@@ -189,10 +191,9 @@ class BasicAgent(object):
         """Check whether the agent has reached its destination."""
         return self._local_planner.done()
     
-    def is_done(self, _end):
-        diff_x = self._vehicle.get_transform().location.x - _end.x
-        diff_y = self._vehicle.get_transform().location.y - _end.y
-        return math.sqrt(diff_x**2 + diff_y**2) < 0.5
+    def is_done(self):
+        distance = compute_distance(self._vehicle.get_transform().location,self._end)
+        return distance < 3.5
 
     def ignore_traffic_lights(self, active=True):
         """(De)activates the checks for traffic lights"""

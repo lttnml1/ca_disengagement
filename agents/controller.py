@@ -10,7 +10,6 @@ import math
 import numpy as np
 import carla
 from misc import get_speed
-import random
 
 
 class VehiclePIDController():
