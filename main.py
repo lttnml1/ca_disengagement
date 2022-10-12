@@ -12,10 +12,10 @@ from cross_entropy.normal_distrib import NormalDistrib
     To see what's in the current path run '>> pprint.pprint(sys.path)'
 """
 
-sys.path.append(os.path.join(pathlib.Path(__file__).parent.parent.resolve(),"agents"))
+#sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(),"agents"))
 from scenarios.scenario_cut_in import Scenario_CutIn
 
-sys.path.append(os.path.join(pathlib.Path(__file__).parent.parent.resolve(),"cross_entropy"))
+#sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(),"cross_entropy"))
 from cross_entropy.CrossEntropy import CrossEntropy
 
 """
@@ -36,12 +36,12 @@ def main():
     
     #Distribution 1 (Normal)
     #   Difference between adversary speed and ego speed
-    adversary_speed_differential = NormalDistrib(4,1)
+    adversary_speed_differential = NormalDistrib(3,1)
     distributions.append(adversary_speed_differential)
 
     #Distribution 2 (Normal)
     #   Distance that adv is ahead of ego before attempting lane change
-    distance_when_lane_change = NormalDistrib(5,1)
+    distance_when_lane_change = NormalDistrib(2,1)
     distributions.append(distance_when_lane_change)
 
     #Distribution 3 (Categorical)
@@ -50,14 +50,13 @@ def main():
     distributions.append(lane_offset)
 
     #generate 100 1's
-    for i in range(10):    
+    for i in range(100):    
         ce = CrossEntropy(100,0.1,0,distributions)
         ret = ce.execute_ce_search(args)
         if ret < 0:
             print("Main Loop Interrupted By User!")
             break
     
-
 if __name__ == '__main__':
     
 

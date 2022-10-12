@@ -58,13 +58,19 @@ class CrossEntropy(object):
                 scores[i,0] = scenario.score
                 print(f"Completed\t{i+1}/{np.shape(y)[0]}")
             
-            gamma, elites = self.calculate_elite(y, scores)
+            gamma, elites = self.calculate_elite(y, scores, debug = False)
             self.update_parameters(elites)
             
             self.print_distribution_parameters()
             print(f"Gamma:{gamma}")
             print(f"\n*****Round: {round} took {time.time()-round_start_time}*****")
             round += 1
+        
+        print("Found a 1-path!! Values are: ")
+        for elite in elites:
+            print(elite[0])
+        
+        return 0
     
     def calculate_elite(self, y, scores, debug=False):
         distribution_elites = []
