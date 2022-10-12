@@ -38,38 +38,58 @@ class CrossEntropy(object):
             y[:,i] = self.distributions[i].draw_samples(num_samples)
         return y
     
-    def execute_ce_search(self, args):
+    def execute_ce_search(self, args, score_func):
         gamma = 100
         round = 0
         while(gamma > self.gamma):
-            print(f"*****Beginning Round {round}*****")
-            round_start_time = time.time()
+            print(f"Beginning Round {round}")
             y = self.draw_random_samples()
             scores = np.empty(y.shape)
             for i in range(np.shape(y)[0]):
                 scenario = Scenario_CutIn('127.0.0.1',2004,y[i,:], args)
+                if(scenario.init < 0):
+                    print("Scenario setup failed, exiting")
+                    return -1
                 scenario.check_for_bad_path()
                 if(not scenario.badPath):
                     ret = scenario.execute_scenario()
                     if(ret < 0):
                         print("Cross-Entropy Loop Interrupted By User!")
                         return -1
-                    scenario.score_scenario()
+                    if(score_func == 'ONES'):
+                        scenario.score_scenario_ONES()
+                    elif(score_func == 'ZEROS'):
+                        scenario.score_scenario_ZEROS()
+                    else: 
+                        print("No valid score function specified, exiting")
+                        return -1
                 scores[i,0] = scenario.score
                 print(f"Completed\t{i+1}/{np.shape(y)[0]}")
             
-            gamma, elites = self.calculate_elite(y, scores, debug = False)
+            gamma, elites = self.calculate_elite(y, scores, debug = True)
             self.update_parameters(elites)
             
             self.print_distribution_parameters()
             print(f"Gamma:{gamma}")
-            print(f"\n*****Round: {round} took {time.time()-round_start_time}*****")
+            print(f"\nRound: {round} done")
             round += 1
         
-        print("Found a 1-path!! Values are: ")
-        for elite in elites:
-            print(elite[0])
-        
+        print(f"Found {len(elites[0])} paths!!")
+        for i in range(len(elites[0])):
+            #execute scenarios
+            final_scenario = Scenario_CutIn('127.0.0.1',2004,[elite[i] for elite in elites], args)
+            final_scenario.execute_scenario()
+            if(score_func == 'ONES'):
+                final_scenario.score_scenario_ONES()
+                final_scenario.write_features('1')
+            elif(score_func == 'ZEROS'):
+                final_scenario.score_scenario_ZEROS()
+                final_scenario.write_features('0')
+            else: 
+                print("No valid score function specified, exiting")
+                return -1
+            #write features/path
+            final_scenario.write_path()
         return 0
     
     def calculate_elite(self, y, scores, debug=False):
@@ -84,10 +104,10 @@ class CrossEntropy(object):
         
         gamma_index = round(self.rho * self.N)
 
-        if(debug): print(f"The gamma element should be at {gamma_index+1}, which means it's {sorted_scores[gamma_index+1]}")
-        gamma_element = sorted_scores[gamma_index+1]
+        if(debug): print(f"The gamma element should be at {gamma_index}, which means it's {sorted_scores[gamma_index]}")
+        gamma_element = sorted_scores[gamma_index]
         
-        elite_set = sorted_score_indices[:gamma_index+2]
+        elite_set = sorted_score_indices[:gamma_index+1]
 
         if(debug): print(f"Elite set has indicies: {elite_set}")
 

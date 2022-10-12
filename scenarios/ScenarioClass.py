@@ -13,6 +13,7 @@ import math
 import os
 import time
 import pathlib
+import subprocess
 
 class Scenario(object):
     def __init__(self, host=None, port=None, args=None):
@@ -23,17 +24,41 @@ class Scenario(object):
         self.score = None
         self.dataframe = None
         self.badPath = False
+        self.client = None
+        self.world = None
+        self.file_name = None
+        self.data_path = None
 
     def world_setup(self):
         try:
+            
             self.client = carla.Client(self.host,self.port)
             self.client.set_timeout(4.0)
             #self.world = self.client.load_world('Town03')
             self.world = self.client.get_world()
+            
         except RuntimeError:
             print(f"Could not connect to client: {self.host}:{self.port}")
-            return 1
-        
+            start_carla = ["C:/CARLA_0.9.13/WindowsNoEditor/CarlaUE4.exe",f"--carla-world-port={self.port}"]
+            check_carla = ["C:/Windows/System32\WindowsPowerShell/v1.0/powershell.exe", f"Get-Process -Id (Get-NetTCPConnection -LocalPort {self.port}).OwningProcess"]
+            kill_carla = ["C:/Windows/System32\WindowsPowerShell/v1.0/powershell.exe", f"Get-Process -Id (Get-NetTCPConnection -LocalPort {self.port}).OwningProcess | kill"]
+            check_carla_process = subprocess.run(check_carla, capture_output=True, text=True)
+            if(check_carla_process.stdout):
+                print("Existing server running on that port, killing...")
+                kill_carla_process = subprocess.run(kill_carla)
+            print("Attempting to start CARLA server...")
+            start_process = subprocess.Popen(start_carla, shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            time.sleep(10)
+            try:
+                print("Retrying connection...")
+                self.client = carla.Client(self.host,self.port)
+                self.client.set_timeout(10.0)
+                self.world = self.client.load_world(self.Town)
+                #self.world = self.client.get_world()
+            except RuntimeError:
+                print(f"Could not connect to client: {self.host}:{self.port}")
+                return -1
+                
         settings = self.world.get_settings()
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = 0.05
@@ -44,6 +69,7 @@ class Scenario(object):
         self.map = self.world.get_map()
         self.spawn_points = self.map.get_spawn_points()
         self.blueprints = self.world.get_blueprint_library()
+        return 0
     
     def get_features(self):
         frame_feature_vec = []
@@ -121,15 +147,15 @@ class Scenario(object):
         if(angle > 180): angle = angle-360
         return angle
     
-    def write_features(self):
+    def write_features(self, label):
         print("Writing features")
         df = self.dataframe
         #data_path = "c:\\data\\label\\"
-        data_path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(),"data\\")
+        self.data_path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(),"data\\")
         time_str = time.strftime("%Y%m%d-%H%M%S")
-        file_name = (time_str + "_.csv")# + str(round(self.score)) +"_XX.csv")
-        full_path = os.path.join(data_path,file_name)
-        print(full_path)
+        file_name = f"{time_str}_{round(self.score)}_{label}.csv"
+        full_path = os.path.join(self.data_path,file_name)
+        self.file_name = full_path
         df.to_csv(full_path)
 
 

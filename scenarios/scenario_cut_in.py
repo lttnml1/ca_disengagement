@@ -23,12 +23,15 @@ from util import helper_functions as hf
 from agents.basic_agent import BasicAgent
 import carla
 import pandas as pd
+import csv
+import os
 
 
 class Scenario_CutIn(Scenario):
     def __init__(self, host, port, parameters, args):
         super().__init__(host, port, args)
-        self.world_setup()
+        self.Town = 'Town03'
+        self.init = self.world_setup()
 
         self.ego = None
         self.adv = None
@@ -137,24 +140,24 @@ class Scenario_CutIn(Scenario):
                     self.adv.destroy()
             return exit_code
     
-    def score_scenario(self):
+    def score_scenario_ONES(self):
         headers = ['frame', 'intersect','distance','angle', 
                    'ego_vel_x','ego_vel_y','ego_vel_z','ego_accel_x','ego_accel_y','ego_accel_z','ego_ang_vel_x','ego_ang_vel_y','ego_ang_vel_z',
                    'adv_vel_x','adv_vel_y','adv_vel_z','adv_accel_x','adv_accel_y','adv_accel_z','adv_ang_vel_x','adv_ang_vel_y','adv_ang_vel_z']
         self.dataframe = pd.DataFrame(data = self.feature_vector, columns=headers)
 
-        self.score = -5
+        self.score = 0
         df_moving = self.dataframe[25:]
 
         #was there a crash?
         crash = df_moving[df_moving['intersect'] == True].shape[0]
         if(crash > 0):
-            self.score -= crash
+            self.score -= crash/10
             return self.score
         else:
             #did the scenario complete?
             if(not self.completed):
-                self.score += abs(df_moving['angle'].min())
+                self.score += 10 * abs(df_moving['angle'].min())
                 return self.score
             else:
                 #did the ego have to stop?
@@ -164,6 +167,43 @@ class Scenario_CutIn(Scenario):
                     self.score -= 0.1 * (1/stopped_frames['distance'].min())
 
         return self.score
+
+    def score_scenario_ZEROS(self):
+        headers = ['frame', 'intersect','distance','angle', 
+                'ego_vel_x','ego_vel_y','ego_vel_z','ego_accel_x','ego_accel_y','ego_accel_z','ego_ang_vel_x','ego_ang_vel_y','ego_ang_vel_z',
+                'adv_vel_x','adv_vel_y','adv_vel_z','adv_accel_x','adv_accel_y','adv_accel_z','adv_ang_vel_x','adv_ang_vel_y','adv_ang_vel_z']
+        self.dataframe = pd.DataFrame(data = self.feature_vector, columns=headers)
+
+        self.score = 0
+        df_moving = self.dataframe[25:]
+
+        #was there a crash?
+        crash = df_moving[df_moving['intersect'] == True].shape[0]
+        if(crash > 0):
+            self.score += crash/10
+            return self.score
+        else:
+            #did the scenario complete?
+            if(not self.completed):
+                self.score += 10 * abs(df_moving['angle'].min())
+                return self.score
+            else:
+                #did the ego have to stop?
+                stopped_frames = df_moving[df_moving['ego_vel_x'] < 0.1]
+                num_frames_stopped = stopped_frames.shape[0]
+                if(num_frames_stopped > 0):
+                    self.score += 0.1 * (1/stopped_frames['distance'].min())
+                else:
+                    self.score -= .1 * (df_moving['distance'].min())
+
+        return self.score
+    
+    def write_path(self):
+        path_file_name = self.file_name.split('.csv')[0] + "_path.csv"
+        with open(os.path.join(self.data_path,path_file_name),'w',newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['ego_target_speed','adversary_speed_differential','distance_when_lane_change','lane_offset'])
+            writer.writerow([self.ego_target_speed, self.adversary_speed_differential,self.distance_when_lane_change,self.lane_offset])
 
 
 
