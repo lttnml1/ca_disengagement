@@ -1,2 +1,6 @@
-
 agents/__pycache__
+classifier_data/*
+cross_entropy/__pycache__
+data
+scenarios/__pycache__
+util/__pycache__
