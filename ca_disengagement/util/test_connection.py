@@ -9,7 +9,7 @@ import carla
 
 
 
-def main():
+def test_connection(args):
     argparser = argparse.ArgumentParser(
         description=__doc__)
     argparser.add_argument(
@@ -44,7 +44,3 @@ def main():
 
     print('Failed to connect to %s:%d.' % (args.host, args.port))
     return 1
-
-if __name__ == '__main__':
-
-    sys.exit(main())

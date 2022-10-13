@@ -20,7 +20,9 @@ class Scenario(object):
         self.host = host
         self.port = port
         self.feature_vector = []
-        self.no_render = args.no_render
+        if(args is not None):
+            self.no_render = args.no_render
+        else: self.no_render = False
         self.score = None
         self.dataframe = None
         self.badPath = False

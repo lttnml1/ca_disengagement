@@ -17,6 +17,7 @@
 
 """
 
+from abc import abstractmethod
 from ca_disengagement.scenarios.scenario_base import Scenario
 from util import helper_functions as hf
 
@@ -28,7 +29,7 @@ import os
 
 
 class Scenario_CutIn(Scenario):
-    def __init__(self, host, port, parameters, args):
+    def __init__(self, host, port, parameters, args=None):
         super().__init__(host, port, args)
         self.Town = 'Town03'
         self.init = self.world_setup()
@@ -101,7 +102,17 @@ class Scenario_CutIn(Scenario):
                         print("Timeout")
                         break
                     elif(not started_lane_change):
-                        if (self.adv.get_transform().location - self.ego.get_transform().location).x > self.distance_when_lane_change:
+                        #get front of ego_vic
+                        ego_transform = self.ego.get_transform()
+                        ego_forward_vector = ego_transform.get_forward_vector()
+                        ego_extent = self.ego.bounding_box.extent.x
+                        ego_front_transform = ego_transform
+                        ego_front_transform.location += carla.Location(
+                            x=ego_extent * ego_forward_vector.x,
+                            y=ego_extent * ego_forward_vector.y,
+                        )
+                        
+                        if (self.adv.get_transform().location - ego_front_transform.location).x > self.distance_when_lane_change:
                             adv_loc = self.adv.get_transform().location
                             adv_waypoint = self.map.get_waypoint(adv_loc)
                             right_lane_loc = adv_waypoint.get_right_lane()
@@ -192,7 +203,8 @@ class Scenario_CutIn(Scenario):
                 stopped_frames = df_moving[df_moving['ego_vel_x'] < 0.1]
                 num_frames_stopped = stopped_frames.shape[0]
                 if(num_frames_stopped > 0):
-                    self.score += 0.1 * (1/stopped_frames['distance'].min())
+                    #self.score += 0.1 * (1/stopped_frames['distance'].min())
+                    self.score -= 1/num_frames_stopped #it's ok that the ego stopped, but less stopping the better (i.e. that's why we subtract and do 1/num_frames_stopped)
                 else:
                     self.score -= .1 * (df_moving['distance'].min())
 
@@ -204,6 +216,23 @@ class Scenario_CutIn(Scenario):
             writer = csv.writer(f)
             writer.writerow(['ego_target_speed','adversary_speed_differential','distance_when_lane_change','lane_offset'])
             writer.writerow([self.ego_target_speed, self.adversary_speed_differential,self.distance_when_lane_change,self.lane_offset])
+    
+    @abstractmethod
+    def replay(file):
+        print(f"Replaying {file}")
+        #read in the file - extract parameters
+        df = pd.read_csv(file)
+        params = [df['adversary_speed_differential'][0],df['distance_when_lane_change'][0],df['lane_offset'][0]]
+        print(params)
+        #create a new object with those parameters
+        replay_scenario = Scenario_CutIn('127.0.0.1',2004,params)
+        
+        #execute the scenario
+        ret = replay_scenario.execute_scenario()
+        if(ret < 0):
+            print("Replay Interrupted By User!")
+            return -1
+        return 0
 
 
 

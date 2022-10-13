@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-import os
-import sys
-import pathlib
 from ca_disengagement.cross_entropy.categorical_distrib import CategoricalDistrib
 from ca_disengagement.cross_entropy.normal_distrib import NormalDistrib
 import time
@@ -52,7 +49,7 @@ def main():
 
         print(f"*****Beginning Round {i} in search for ONES*****")
         round_start_time = time.time()    
-        ce = CrossEntropy(100,0.1,0,distributions)
+        ce = CrossEntropy(10,0.1,0,distributions)
         ret = ce.execute_ce_search(args, 'ONES')
         if ret < 0:
             print("Main Loop Interrupted!")
@@ -83,7 +80,7 @@ def main():
 
         print(f"*****Beginning Round {i} in search for ZEROS*****")
         round_start_time = time.time()    
-        ce = CrossEntropy(100,0.1,0,distributions)
+        ce = CrossEntropy(10,0.1,0,distributions)
         ret = ce.execute_ce_search(args, 'ZEROS')
         if ret < 0:
             print("Main Loop Interrupted!")
@@ -97,4 +94,6 @@ def main():
     print("*****************************************************************")
 
 if __name__ == '__main__':
-    main()
+    #main()
+    from ca_disengagement.util import replay_files
+    replay_files.replay()
