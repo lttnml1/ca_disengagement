@@ -13,9 +13,6 @@ import time
     To see what's in the current path run '>> pprint.pprint(sys.path)'
 """
 
-#sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(),"agents"))
-
-#sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(),"cross_entropy"))
 from ca_disengagement.cross_entropy.cross_entropy import CrossEntropy
 
 """
@@ -100,6 +97,4 @@ def main():
     print("*****************************************************************")
 
 if __name__ == '__main__':
-    
-
     main()
