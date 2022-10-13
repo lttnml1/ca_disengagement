@@ -1,6 +1,6 @@
-agents/__pycache__
-classifier_data/*
-cross_entropy/__pycache__
-data
-scenarios/__pycache__
-util/__pycache__
+ca_disengagement/agents/__pycache__
+ca_disengagement/classifier_data
+ca_disengagement/cross_entropy/__pycache__
+ca_disengagement/data
+ca_disengagement/scenarios/__pycache__
+ca_disengagement/util/__pycache__

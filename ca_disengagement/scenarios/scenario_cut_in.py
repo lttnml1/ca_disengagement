@@ -17,7 +17,7 @@
 
 """
 
-from scenarios.ScenarioClass import Scenario
+from ca_disengagement.scenarios.scenario_base import Scenario
 from util import helper_functions as hf
 
 from agents.basic_agent import BasicAgent

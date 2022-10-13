@@ -4,8 +4,8 @@ import argparse
 import os
 import sys
 import pathlib
-from cross_entropy.categorical_distrib import CategoricalDistrib
-from cross_entropy.normal_distrib import NormalDistrib
+from ca_disengagement.cross_entropy.categorical_distrib import CategoricalDistrib
+from ca_disengagement.cross_entropy.normal_distrib import NormalDistrib
 import time
 
 """
@@ -13,11 +13,10 @@ import time
     To see what's in the current path run '>> pprint.pprint(sys.path)'
 """
 
-sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(),"agents"))
-from scenarios.scenario_cut_in import Scenario_CutIn
+#sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(),"agents"))
 
 #sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(),"cross_entropy"))
-from cross_entropy.CrossEntropy import CrossEntropy
+from ca_disengagement.cross_entropy.cross_entropy import CrossEntropy
 
 """
     This file should

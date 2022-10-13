@@ -20,7 +20,7 @@ Notes:
 
 import numpy as np
 import time
-from scenarios.scenario_cut_in import Scenario_CutIn
+from ca_disengagement.scenarios.scenario_cut_in import Scenario_CutIn
 
 class CrossEntropy(object):
     def __init__(self, N, rho, gamma, distributions):

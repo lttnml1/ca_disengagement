@@ -7,7 +7,6 @@ import time
 #note - in order to successfully import carla your path variable must know where the python egg file is
 import carla
 
-from scenarios.ScenarioClass import Scenario
 
 
 def main():

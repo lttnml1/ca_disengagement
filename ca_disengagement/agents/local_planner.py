@@ -10,8 +10,8 @@ from collections import deque
 import random
 
 import carla
-from controller import VehiclePIDController
-from misc import draw_waypoints, get_speed
+from ca_disengagement.agents.controller import VehiclePIDController
+from ca_disengagement.agents.misc import draw_waypoints, get_speed
 
 
 class RoadOption(Enum):

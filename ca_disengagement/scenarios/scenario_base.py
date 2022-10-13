@@ -38,17 +38,7 @@ class Scenario(object):
             self.world = self.client.get_world()
             
         except RuntimeError:
-            print(f"Could not connect to client: {self.host}:{self.port}")
-            start_carla = ["C:/CARLA_0.9.13/WindowsNoEditor/CarlaUE4.exe",f"--carla-world-port={self.port}"]
-            check_carla = ["C:/Windows/System32\WindowsPowerShell/v1.0/powershell.exe", f"Get-Process -Id (Get-NetTCPConnection -LocalPort {self.port}).OwningProcess"]
-            kill_carla = ["C:/Windows/System32\WindowsPowerShell/v1.0/powershell.exe", f"Get-Process -Id (Get-NetTCPConnection -LocalPort {self.port}).OwningProcess | kill"]
-            check_carla_process = subprocess.run(check_carla, capture_output=True, text=True)
-            if(check_carla_process.stdout):
-                print("Existing server running on that port, killing...")
-                kill_carla_process = subprocess.run(kill_carla)
-            print("Attempting to start CARLA server...")
-            start_process = subprocess.Popen(start_carla, shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            time.sleep(10)
+            self.restart_carla()
             try:
                 print("Retrying connection...")
                 self.client = carla.Client(self.host,self.port)
@@ -59,16 +49,39 @@ class Scenario(object):
                 print(f"Could not connect to client: {self.host}:{self.port}")
                 return -1
                 
-        settings = self.world.get_settings()
-        settings.synchronous_mode = True
-        settings.fixed_delta_seconds = 0.05
-        if(self.no_render): settings.no_rendering_mode = True
-        else: settings.no_rendering_mode = False
-        self.world.apply_settings(settings)
+        try:    
+            settings = self.world.get_settings()
+            settings.synchronous_mode = True
+            settings.fixed_delta_seconds = 0.05
+            if(self.no_render): settings.no_rendering_mode = True
+            else: settings.no_rendering_mode = False
+            self.world.apply_settings(settings)
 
-        self.map = self.world.get_map()
-        self.spawn_points = self.map.get_spawn_points()
-        self.blueprints = self.world.get_blueprint_library()
+            self.map = self.world.get_map()
+            self.spawn_points = self.map.get_spawn_points()
+            self.blueprints = self.world.get_blueprint_library()
+        except RuntimeError:
+            self.restart_carla()
+            try:
+                print("Retrying connection...")
+                self.client = carla.Client(self.host,self.port)
+                self.client.set_timeout(10.0)
+                self.world = self.client.load_world(self.Town)
+                #self.world = self.client.get_world()
+
+                settings = self.world.get_settings()
+                settings.synchronous_mode = True
+                settings.fixed_delta_seconds = 0.05
+                if(self.no_render): settings.no_rendering_mode = True
+                else: settings.no_rendering_mode = False
+                self.world.apply_settings(settings)
+
+                self.map = self.world.get_map()
+                self.spawn_points = self.map.get_spawn_points()
+                self.blueprints = self.world.get_blueprint_library()
+            except RuntimeError:
+                print(f"Could not connect to client: {self.host}:{self.port}")
+                return -1
         return 0
     
     def get_features(self):
@@ -157,5 +170,18 @@ class Scenario(object):
         full_path = os.path.join(self.data_path,file_name)
         self.file_name = full_path
         df.to_csv(full_path)
+    
+    def restart_carla(self):
+        print(f"Could not connect to client: {self.host}:{self.port}")
+        start_carla = ["C:/CARLA_0.9.13/WindowsNoEditor/CarlaUE4.exe",f"--carla-world-port={self.port}"]
+        check_carla = ["C:/Windows/System32\WindowsPowerShell/v1.0/powershell.exe", f"Get-Process -Id (Get-NetTCPConnection -LocalPort {self.port}).OwningProcess"]
+        kill_carla = ["C:/Windows/System32\WindowsPowerShell/v1.0/powershell.exe", f"Get-Process -Id (Get-NetTCPConnection -LocalPort {self.port}).OwningProcess | kill"]
+        check_carla_process = subprocess.run(check_carla, capture_output=True, text=True)
+        if(check_carla_process.stdout):
+            print("Existing server running on that port, killing...")
+            kill_carla_process = subprocess.run(kill_carla)
+        print("Attempting to start CARLA server...")
+        start_process = subprocess.Popen(start_carla, shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        time.sleep(10)
 
 

@@ -14,9 +14,9 @@ import math
 from enum import Enum
 from shapely.geometry import Polygon
 
-from local_planner import LocalPlanner
-from global_route_planner import GlobalRoutePlanner
-from misc import get_speed, is_within_distance, get_trafficlight_trigger_location, compute_distance
+from ca_disengagement.agents.local_planner import LocalPlanner
+from ca_disengagement.agents.global_route_planner import GlobalRoutePlanner
+from ca_disengagement.agents.misc import get_speed, is_within_distance, get_trafficlight_trigger_location, compute_distance
 
 
 class BasicAgent(object):
