@@ -94,6 +94,6 @@ def main():
     print("*****************************************************************")
 
 if __name__ == '__main__':
-    main()
-    #from ca_disengagement.util import replay_files
-    #replay_files.replay()
+    #main()
+    from ca_disengagement.util import replay_files
+    replay_files.replay()

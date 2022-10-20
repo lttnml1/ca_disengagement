@@ -11,7 +11,7 @@ def replay():
         good_files = [f for f in fileList if '0_path' in f]
         bad_files = [f for f in fileList if '1_path' in f]
     
-    num_to_sample = 3
+    num_to_sample = 1
     good_files_subset = random.sample(good_files,num_to_sample)
     bad_files_subset = random.sample(bad_files,num_to_sample)
     
@@ -25,7 +25,7 @@ def replay():
             return
         counter +=1
 
-    time.sleep(10)
+    time.sleep(1)
     counter = 0            
     for file in bad_files_subset:
         print(counter, file)
