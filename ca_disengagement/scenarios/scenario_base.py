@@ -35,7 +35,7 @@ class Scenario(object):
         try:
             
             self.client = carla.Client(self.host,self.port)
-            self.client.set_timeout(4.0)
+            self.client.set_timeout(10.0)
             #self.world = self.client.load_world('Town03')
             self.world = self.client.get_world()
             

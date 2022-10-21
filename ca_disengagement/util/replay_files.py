@@ -24,7 +24,7 @@ def replay():
             print("Good files replay loop interrupted by user")
             return
         counter +=1
-
+    """
     time.sleep(1)
     counter = 0            
     for file in bad_files_subset:
@@ -34,4 +34,4 @@ def replay():
             print("Bad files replay loop interrupted by user")
             return
         counter +=1
-    
+    """

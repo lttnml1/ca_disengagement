@@ -29,6 +29,8 @@ import os
 import random
 import time
 
+from ca_disengagement.agents import misc
+
 
 class Scenario_CutIn(Scenario):
     def __init__(self, host, port, parameters, args=None):
@@ -158,24 +160,28 @@ class Scenario_CutIn(Scenario):
         try: 
             ego_blueprint = self.blueprints.filter("vehicle.dodge.charger_police")[0]
             ego_blueprint.set_attribute('role_name','ego')
-            ego_spawn_point, adv_spawn_point, lane_change_dir = self.find_good_spawn_point()
-            print(type(ego_spawn_point), type(adv_spawn_point),lane_change_dir)
-            hf.draw_location(self.world,ego_spawn_point.location)
-            hf.draw_location(self.world,adv_spawn_point.location)
-
-            self.ego = self.world.try_spawn_actor(ego_blueprint,adv_spawn_point)
-
+            spawn_points = self.find_good_spawn_points()
+            if(spawn_points):
+                sp = random.choice(spawn_points)
+                ego_spawn_point = self.spawn_points[sp[0]]
+                adv_spawn_point = self.spawn_points[sp[1]]
+                lange_change = sp[2]
+            self.ego = self.world.try_spawn_actor(ego_blueprint,ego_spawn_point)
+            
             adversary_blueprint = self.blueprints.filter("vehicle.tesla.model3")[0]
-            adversary_blueprint.set_attribute('role_name', 'adversary')
+            adversary_blueprint.set_attribute('role_name','adversary')
             adversary_blueprint.set_attribute('color','200,0,0')
+            self.adv = self.world.try_spawn_actor(adversary_blueprint,adv_spawn_point)
 
-            #self.adv = self.world.try_spawn_actor(adversary_blueprint,adv_spawn_point)
+            print(f"Adversary will be executing a {lange_change} maneuver")
+            
+            for i in range(10):
+                self.world.tick()
+            
 
             if(not self.no_render):
                 spectator = self.world.get_spectator()
-                spectator.set_transform(carla.Transform(ego_spawn_point.location + carla.Location(z=50),carla.Rotation(roll=0,pitch=-90,yaw=0)))
-
-            self.world.tick()
+                spectator.set_transform(carla.Transform(ego_spawn_point.location + carla.Location(z=50),carla.Rotation(roll=0,pitch=-50,yaw=0)))
 
             ego_agent = BasicAgent(self.ego,target_speed=self.ego_target_speed)
             adv_agent = BasicAgent(self.adv,target_speed=self.ego_target_speed + self.adversary_speed_differential,opt_dict={'offset':self.lane_offset})
@@ -186,10 +192,8 @@ class Scenario_CutIn(Scenario):
             timeout_counter = 0
             crash_counter = 0
             
-            while True:
-                self.world.tick()
             
-            """
+            
             while True:
                 try:
                     self.world.tick()
@@ -219,18 +223,30 @@ class Scenario_CutIn(Scenario):
                         if (self.adv.get_transform().location - ego_front_transform.location).x > self.distance_when_lane_change:
                             adv_loc = self.adv.get_transform().location
                             adv_waypoint = self.map.get_waypoint(adv_loc)
-                            right_lane_loc = adv_waypoint.get_right_lane()
-                            adv_agent.set_destination(right_lane_loc.transform.location)
+                            if lange_change == 'CHANGE_RIGHT':
+                                new_dest = adv_waypoint.get_right_lane().transform.location
+                                adv_agent.set_destination(new_dest)
+                            elif lange_change == 'CHANGE_LEFT':
+                                new_dest = adv_waypoint.get_left_lane().transform.location
+                                adv_agent.set_destination(new_dest)
+                            else:
+                                print("Not a valid lane change maneuver")
+                                break
                             started_lane_change = True
+                            print("started lane change")
+                            hf.draw_location(self.world,new_dest,life_time=5)
                     elif(not finished_lane_change):
                         if(adv_agent.done()):
                             finished_lane_change = True
-                            new_wp = self.map.get_waypoint(carla.Location(x=84.220612, y=207.268448, z=0.952669))
+                            print("finished lane change")
+                            new_wp = self.map.get_waypoint(self.ego.get_transform().location,project_to_road=True,lane_type=carla.LaneType.Driving).next_until_lane_end(5)[5]
+                            hf.draw_location(self.world,new_wp.transform.location, life_time = 30)
                             adv_agent.set_destination(new_wp.transform.location)
                             ego_agent.set_destination(new_wp.transform.location)
                     elif(finished_lane_change):
                         if(adv_agent.is_done() or ego_agent.is_done() or adv_agent.done() or ego_agent.done()):
                             self.completed = True
+                            print("completed scenario")
                             break
                     
                     self.ego.apply_control(ego_agent.run_step())
@@ -242,7 +258,6 @@ class Scenario_CutIn(Scenario):
                     print("Scenario Loop Interrupted By User!")
                     exit_code = -1
                     break
-            """
         finally:    
             if self.world is not None:
                 settings = self.world.get_settings()
@@ -255,29 +270,29 @@ class Scenario_CutIn(Scenario):
                     self.adv.destroy()
             return exit_code
 
-    def find_good_spawn_point(self):
+    def find_good_spawn_points(self):
         # 1) Speed limit is above 90 km/h
         # 2) There is sufficient distance to the end of the highway for a passing maneuver
         # 3) There is either a left or right equivalent to the ego_spawn_point
-        #search through self.spawn_points to find somewhere on the highway that has a left or right lane equivalent
-        good_ego_spawn_point = False
-        while(not good_ego_spawn_point):
-            ego_spawn_point = random.choice(self.spawn_points)
+
+        over_90 = []
+        with_space = []
+        good_ego_spawn_points = []
+        for i in range(len(self.spawn_points)):
+            ego_spawn_point = self.spawn_points[i]
             wp = self.map.get_waypoint(ego_spawn_point.location,project_to_road=True,lane_type=carla.LaneType.Driving)
             if(self.speed_limit_over_90(wp)):
+                over_90.append(i)
                 if(self.distance_to_end(wp)):
-                    exists, adv_spawn_point, lane_change_dir = self.lane_change(wp)
-                    if(exists):
-                        good_ego_spawn_point = True
-        
-        #hf.draw_location(self.world, wp.transform.location, life_time=10)
-        #time.sleep(2)
-        #hf.draw_location(self.world, adv_spawn_point.transform.location, life_time=10)
-
-        return wp.transform, adv_spawn_point.transform, lane_change_dir
+                    with_space.append(i)
+                    possible_lane_changes = self.lane_change(wp)
+                    if(possible_lane_changes):
+                        for p in possible_lane_changes:
+                            good_ego_spawn_points.append((i,p[0],p[1]))
+        return good_ego_spawn_points
     
     def speed_limit_over_90(self, wp):
-        speed_limit_signs = wp.get_landmarks_of_type(20,'274')
+        speed_limit_signs = wp.get_landmarks_of_type(100,'274')
         if speed_limit_signs:
             for sign in speed_limit_signs:
                 if sign.value >= 90.0: 
@@ -290,14 +305,26 @@ class Scenario_CutIn(Scenario):
         else: return False
     
     def lane_change(self, wp):
+        possible = []
+
         left_wp = wp.get_left_lane()
+        left_lane_id = left_wp.lane_id
         right_wp = wp.get_right_lane()
+        right_lane_id = right_wp.lane_id
         if right_wp is not None:
-            return True, right_wp, 'CHANGE_LEFT'
-        elif left_wp is not None:
-            return True, left_wp, 'CHANGE_RIGHT'
-        else:
-            return False, None, None
+            #see if there's a spawn point close by
+            for i in range(len(self.spawn_points)):
+                sp_to_wp = self.map.get_waypoint(self.spawn_points[i].location,project_to_road=True,lane_type=carla.LaneType.Driving)
+                if(right_lane_id == sp_to_wp.lane_id and misc.compute_distance(right_wp.transform.location,sp_to_wp.transform.location) < 25):
+                    possible.append((i, 'CHANGE_LEFT'))
+        if left_wp is not None:
+            #see if there's a spawn point close by
+            for i in range(len(self.spawn_points)):
+                sp_to_wp = self.map.get_waypoint(self.spawn_points[i].location,project_to_road=True,lane_type=carla.LaneType.Driving)
+                if(left_lane_id == sp_to_wp.lane_id and misc.compute_distance(left_wp.transform.location,sp_to_wp.transform.location) < 25):
+                    possible.append((i, 'CHANGE_RIGHT'))
+        
+        return possible
 
     def score_scenario_ONES(self):
         headers = ['frame', 'intersect','distance','angle', 
